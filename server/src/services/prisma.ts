@@ -5,6 +5,7 @@ import { config } from '../config/env.ts';
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { CitationEngine } from './citationEngine.ts';
 
 export interface PrismaClientInterface {
