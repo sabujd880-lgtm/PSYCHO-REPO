@@ -1,9 +1,51 @@
 // server/src/modules/documents/extraction/pdfExtractor.ts
 // Format-specific PDF extractor with page boundary preservation, stream decompression, and OCR detection
 import zlib from 'node:zlib';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import fs from 'node:fs';
 import type { ExtractedPage, ExtractionResult } from './types.ts';
 
-export function extractPdf(buffer: Buffer): ExtractionResult {
+const PYTHON_BINS = [
+  'C:\\Users\\sabuj\\miniconda3\\python.exe',
+  'C:\\Program Files\\PsychoPy\\python.exe',
+  'python'
+];
+const HELPER_SCRIPT = path.resolve(import.meta.dirname, 'extractHelper.py');
+
+export function extractPdf(buffer: Buffer, filePath?: string): ExtractionResult {
+  // Strategy 1: High-precision PyMuPDF (fitz) extractor if filePath provided
+  if (filePath && fs.existsSync(filePath) && fs.existsSync(HELPER_SCRIPT)) {
+    for (const pyBin of PYTHON_BINS) {
+      if (fs.existsSync(pyBin) || pyBin === 'python') {
+        try {
+          const output = execFileSync(pyBin, [HELPER_SCRIPT, 'pdf', filePath], {
+            encoding: 'utf-8',
+            timeout: 30000,
+            maxBuffer: 50 * 1024 * 1024
+          });
+          const parsed = JSON.parse(output);
+          if (parsed.pages && parsed.pages.length > 0) {
+            return {
+              pages: parsed.pages.map((p: any) => ({
+                pageNumber: p.pageNumber,
+                heading: p.heading,
+                text: p.text,
+                extractionMethod: 'PDF_FITZ'
+              })),
+              totalPages: parsed.pages.length,
+              extractionMethod: 'PDF_FITZ',
+              ocrApplied: false,
+              fileType: 'PDF'
+            };
+          }
+        } catch {
+          // Continue to next python candidate or fallback
+        }
+      }
+    }
+  }
+
   const binary = buffer.toString('binary');
   const pages: ExtractedPage[] = [];
 

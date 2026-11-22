@@ -104,6 +104,7 @@ export class ExpressApp {
     this.mountModule('/api/clinical', registerClinicalRoutes);
     this.mountModule('/api/research', registerResearchRoutes);
     this.mountModule('/api/exams', registerExamRoutes);
+    this.mountModule('/api/pyq', registerExamRoutes);
     this.mountModule('/api/teaching', registerTeachingRoutes);
     this.mountModule('/api/documents', registerDocumentRoutes);
     this.mountModule('/api/library', registerLibraryRoutes);
@@ -111,10 +112,11 @@ export class ExpressApp {
     // Dashboard Live Statistics
     this.get('/api/dashboard/stats', async (_req: any, res: any) => {
       const db = getDbClient();
-      const [totalResources, totalArticles, totalDocuments, recentDocs, recentResources] = await Promise.all([
+      const [totalResources, totalArticles, totalDocuments, totalAssessments, recentDocs, recentResources] = await Promise.all([
         db.reference.count(),
         db.knowledgeArticle.count(),
         db.document.count(),
+        db.assessmentInstrument.count(),
         db.document.findMany({ take: 5, orderBy: { createdAt: 'desc' } }),
         db.reference.findMany({ take: 5, orderBy: { createdAt: 'desc' } })
       ]);
@@ -124,7 +126,7 @@ export class ExpressApp {
           counts: {
             totalResources,
             totalArticles,
-            totalAssessments: 25, // Standard psychometrics in catalogue
+            totalAssessments: Math.max(25, totalAssessments || 0),
             totalDocuments
           },
           recentDocs: (recentDocs || []).map((d: any) => ({

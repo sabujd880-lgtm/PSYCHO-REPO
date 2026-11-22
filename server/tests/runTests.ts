@@ -224,28 +224,28 @@ async function runTestSuite() {
       assert.strictEqual(verifyRes.status, 404);
     });
 
-    // 13. Documented Placeholders for Future Phases
-    await test('13. Documented Module Placeholders (Assessments, Clinical, Research, Exams, Teaching)', async () => {
+    // 13. Documented Module Placeholders and Handlers
+    await test('13. Documented Module Handlers (Assessments, Clinical, Research, Exams, Teaching)', async () => {
       const asmt = await request('/api/assessments');
       assert.strictEqual(asmt.status, 200);
       assert.strictEqual(asmt.body.success, true);
-      assert.deepStrictEqual(asmt.body.data, []);
+      assert.ok(Array.isArray(asmt.body.data), 'Assessments must return an array');
 
       const clin = await request('/api/clinical/topics');
       assert.strictEqual(clin.status, 200);
-      assert.deepStrictEqual(clin.body.data, []);
+      assert.ok(Array.isArray(clin.body.data), 'Clinical topics must return an array');
 
       const resr = await request('/api/research/papers');
       assert.strictEqual(resr.status, 200);
-      assert.deepStrictEqual(resr.body.data, []);
+      assert.ok(Array.isArray(resr.body.data), 'Research papers must return an array');
 
       const exams = await request('/api/exams');
       assert.strictEqual(exams.status, 200);
-      assert.deepStrictEqual(exams.body.data, []);
+      assert.ok(Array.isArray(exams.body.data), 'Exams must return an array');
 
       const teach = await request('/api/teaching/notes');
       assert.strictEqual(teach.status, 200);
-      assert.deepStrictEqual(teach.body.data, []);
+      assert.ok(Array.isArray(teach.body.data), 'Teaching notes must return an array');
     });
 
     // 14. 404 Not Found Handling

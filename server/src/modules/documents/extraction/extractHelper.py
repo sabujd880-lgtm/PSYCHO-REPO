@@ -185,6 +185,31 @@ def analyze_image(file_path):
     except Exception as e:
         return {"error": str(e), "pages": []}
 
+def extract_pdf(file_path):
+    pages = []
+    try:
+        import fitz
+        doc = fitz.open(file_path)
+        for idx in range(len(doc)):
+            page = doc[idx]
+            text = page.get_text()
+            first_line = text.split('\n')[0].strip()[:60] if text else f"Page {idx + 1}"
+            pages.append({
+                "pageNumber": idx + 1,
+                "heading": first_line or f"Page {idx + 1}",
+                "text": text or f"[Page {idx + 1}: Non-text graphical content]",
+                "extractionMethod": "PDF_FITZ"
+            })
+        return {
+            "pages": pages,
+            "totalPages": len(pages),
+            "method": "PDF_FITZ",
+            "ocrApplied": False,
+            "fileType": "PDF"
+        }
+    except Exception as e:
+        return {"error": str(e), "pages": []}
+
 def main():
     if len(sys.argv) < 3:
         print(json.dumps({"error": "Usage: extractHelper.py <command> <file_path>"}))
@@ -198,7 +223,9 @@ def main():
         sys.exit(1)
 
     result = {}
-    if cmd == "docx":
+    if cmd == "pdf":
+        result = extract_pdf(file_path)
+    elif cmd == "docx":
         result = extract_docx(file_path)
     elif cmd == "pptx":
         result = extract_pptx(file_path)

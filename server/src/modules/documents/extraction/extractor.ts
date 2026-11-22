@@ -29,7 +29,7 @@ export function extractDocument(filePath: string, originalFilename: string, mime
   try {
     switch (fileType) {
       case 'PDF':
-        return extractPdf(buffer);
+        return extractPdf(buffer, filePath);
 
       case 'DOCX':
         return extractDocx(filePath, buffer);

@@ -15,6 +15,10 @@ export interface PrismaClientInterface {
   applicationSetting: any;
   assessmentInstrument: any;
   clinicalTopic: any;
+  clinicalTemplate: any;
+  pyqSyllabusUnit: any;
+  pyqQuestion: any;
+  pyqTrendStat: any;
   researchPaper: any;
   exam: any;
   teachingNote: any;
@@ -179,6 +183,88 @@ class PrismaDatabaseClient implements PrismaClientInterface {
         notes TEXT,
         category TEXT,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS assessment_instruments (
+        id TEXT PRIMARY KEY,
+        code TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        acronym TEXT,
+        category_id TEXT REFERENCES resource_categories(id),
+        category_name TEXT,
+        original_author TEXT,
+        publication_year INTEGER,
+        age_range TEXT,
+        purpose TEXT,
+        domains_measured TEXT,
+        reliability_validity_evidence TEXT,
+        normative_population TEXT,
+        scoring_overview TEXT,
+        licensing_qualification TEXT,
+        time_required TEXT,
+        is_verified INTEGER DEFAULT 1,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS clinical_topics (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        clinical_significance TEXT NOT NULL,
+        professional_guidelines TEXT NOT NULL,
+        practical_examples TEXT,
+        related_assessment_tools TEXT,
+        references_json TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS clinical_templates (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL,
+        template_text TEXT NOT NULL,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS pyq_syllabus_units (
+        id TEXT PRIMARY KEY,
+        examination_id INTEGER DEFAULT 1,
+        unit_number INTEGER NOT NULL,
+        unit_title TEXT NOT NULL,
+        description TEXT,
+        historical_weightage REAL DEFAULT 10.0,
+        recurring_topics_count INTEGER DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS pyq_questions (
+        id TEXT PRIMARY KEY,
+        examination_id INTEGER DEFAULT 1,
+        unit_id TEXT,
+        unit_number INTEGER,
+        question_number INTEGER,
+        question_text TEXT NOT NULL,
+        options_json TEXT NOT NULL,
+        correct_answer TEXT NOT NULL,
+        explanation TEXT,
+        difficulty TEXT DEFAULT 'Moderate',
+        topic_tag TEXT,
+        years_appeared TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS pyq_trend_stats (
+        id TEXT PRIMARY KEY,
+        examination_id INTEGER DEFAULT 1,
+        unit_number INTEGER,
+        unit_title TEXT,
+        historical_weightage REAL,
+        topic_name TEXT,
+        appearance_count INTEGER DEFAULT 1,
+        trend_category TEXT DEFAULT 'Frequently Tested',
+        years_appeared TEXT
       );
 
       CREATE INDEX IF NOT EXISTS idx_art_slug ON knowledge_articles(slug);
@@ -843,11 +929,205 @@ class PrismaDatabaseClient implements PrismaClientInterface {
   };
 
   assessmentInstrument = {
-    findMany: async () => []
+    findMany: async (args: any = {}) => {
+      const { where = {}, orderBy = {} } = args;
+      let sql = 'SELECT * FROM assessment_instruments WHERE 1=1';
+      const params: any[] = [];
+      if (where.category_id) {
+        sql += ' AND category_id = ?';
+        params.push(where.category_id);
+      }
+      if (where.code && Array.isArray(where.code.in)) {
+        sql += ` AND code IN (${where.code.in.map(() => '?').join(',')})`;
+        params.push(...where.code.in);
+      }
+      sql += ' ORDER BY name ASC';
+      return this.sqliteDb!.prepare(sql).all(...params);
+    },
+    findUnique: async (args: { where: { id?: string; code?: string } }) => {
+      const { where } = args;
+      if (where.id) {
+        return this.sqliteDb!.prepare('SELECT * FROM assessment_instruments WHERE id = ?').get(where.id);
+      }
+      if (where.code) {
+        return this.sqliteDb!.prepare('SELECT * FROM assessment_instruments WHERE code = ?').get(where.code);
+      }
+      return null;
+    },
+    create: async (args: { data: any }) => {
+      const { data } = args;
+      const id = data.id || crypto.randomUUID();
+      const sql = `
+        INSERT OR REPLACE INTO assessment_instruments (
+          id, code, name, acronym, category_id, category_name, original_author, publication_year,
+          age_range, purpose, domains_measured, reliability_validity_evidence, normative_population,
+          scoring_overview, licensing_qualification, time_required, is_verified, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `;
+      this.sqliteDb!.prepare(sql).run(
+        id, data.code, data.name, data.acronym || '', data.category_id || null, data.category_name || '',
+        data.original_author || '', data.publication_year || null, data.age_range || '', data.purpose || '',
+        data.domains_measured || '', data.reliability_validity_evidence || '', data.normative_population || '',
+        data.scoring_overview || '', data.licensing_qualification || '', data.time_required || '',
+        data.is_verified ?? 1
+      );
+      return this.assessmentInstrument.findUnique({ where: { id } });
+    },
+    count: async () => {
+      const row: any = this.sqliteDb!.prepare('SELECT COUNT(*) as c FROM assessment_instruments').get();
+      return row ? row.c : 0;
+    }
   };
 
   clinicalTopic = {
-    findMany: async () => []
+    findMany: async (args: any = {}) => {
+      const { where = {} } = args;
+      let sql = 'SELECT * FROM clinical_topics WHERE 1=1';
+      const params: any[] = [];
+      if (where.domain) {
+        sql += ' AND domain = ?';
+        params.push(where.domain);
+      }
+      sql += ' ORDER BY title ASC';
+      const rows = this.sqliteDb!.prepare(sql).all(...params) as any[];
+      return rows.map(r => ({
+        ...r,
+        references_json: typeof r.references_json === 'string' ? JSON.parse(r.references_json || '[]') : (r.references_json || [])
+      }));
+    },
+    findUnique: async (args: { where: { id: string } }) => {
+      const row: any = this.sqliteDb!.prepare('SELECT * FROM clinical_topics WHERE id = ?').get(args.where.id);
+      if (!row) return null;
+      return {
+        ...row,
+        references_json: typeof row.references_json === 'string' ? JSON.parse(row.references_json || '[]') : (row.references_json || [])
+      };
+    },
+    create: async (args: { data: any }) => {
+      const { data } = args;
+      const id = data.id || crypto.randomUUID();
+      const sql = `
+        INSERT OR REPLACE INTO clinical_topics (
+          id, title, domain, clinical_significance, professional_guidelines, practical_examples,
+          related_assessment_tools, references_json, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `;
+      const refs = typeof data.references_json === 'string' ? data.references_json : JSON.stringify(data.references_json || []);
+      this.sqliteDb!.prepare(sql).run(
+        id, data.title, data.domain, data.clinical_significance, data.professional_guidelines,
+        data.practical_examples || '', data.related_assessment_tools || '', refs
+      );
+      return this.clinicalTopic.findUnique({ where: { id } });
+    },
+    count: async () => {
+      const row: any = this.sqliteDb!.prepare('SELECT COUNT(*) as c FROM clinical_topics').get();
+      return row ? row.c : 0;
+    }
+  };
+
+  clinicalTemplate = {
+    findMany: async () => {
+      return this.sqliteDb!.prepare('SELECT * FROM clinical_templates ORDER BY category ASC, title ASC').all();
+    },
+    create: async (args: { data: any }) => {
+      const { data } = args;
+      const id = data.id || crypto.randomUUID();
+      const sql = `
+        INSERT OR REPLACE INTO clinical_templates (id, title, category, template_text, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `;
+      this.sqliteDb!.prepare(sql).run(id, data.title, data.category, data.template_text);
+      return this.sqliteDb!.prepare('SELECT * FROM clinical_templates WHERE id = ?').get(id);
+    }
+  };
+
+  pyqSyllabusUnit = {
+    findMany: async (args: any = {}) => {
+      const examId = args.where?.examination_id ?? 1;
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_syllabus_units WHERE examination_id = ? ORDER BY unit_number ASC').all(examId);
+    },
+    create: async (args: { data: any }) => {
+      const { data } = args;
+      const id = data.id || crypto.randomUUID();
+      const sql = `
+        INSERT OR REPLACE INTO pyq_syllabus_units (id, examination_id, unit_number, unit_title, description, historical_weightage, recurring_topics_count)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
+      this.sqliteDb!.prepare(sql).run(id, data.examination_id ?? 1, data.unit_number, data.unit_title, data.description || '', data.historical_weightage ?? 10.0, data.recurring_topics_count ?? 0);
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_syllabus_units WHERE id = ?').get(id);
+    }
+  };
+
+  pyqQuestion = {
+    findMany: async (args: any = {}) => {
+      const { where = {}, take = 100 } = args;
+      let sql = 'SELECT * FROM pyq_questions WHERE 1=1';
+      const params: any[] = [];
+      if (where.examination_id) {
+        sql += ' AND examination_id = ?';
+        params.push(where.examination_id);
+      }
+      if (where.unit_id) {
+        sql += ' AND (unit_id = ? OR unit_number = ?)';
+        params.push(where.unit_id, Number(where.unit_id) || -1);
+      }
+      if (where.difficulty) {
+        sql += ' AND difficulty = ?';
+        params.push(where.difficulty);
+      }
+      sql += ' ORDER BY question_number ASC LIMIT ?';
+      params.push(take);
+      const rows = this.sqliteDb!.prepare(sql).all(...params) as any[];
+      return rows.map(r => ({
+        ...r,
+        options_json: typeof r.options_json === 'string' ? JSON.parse(r.options_json || '[]') : (r.options_json || [])
+      }));
+    },
+    create: async (args: { data: any }) => {
+      const { data } = args;
+      const id = data.id || crypto.randomUUID();
+      const sql = `
+        INSERT OR REPLACE INTO pyq_questions (
+          id, examination_id, unit_id, unit_number, question_number, question_text,
+          options_json, correct_answer, explanation, difficulty, topic_tag, years_appeared, createdAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `;
+      const opts = typeof data.options_json === 'string' ? data.options_json : JSON.stringify(data.options_json || []);
+      this.sqliteDb!.prepare(sql).run(
+        id, data.examination_id ?? 1, data.unit_id || null, data.unit_number || null,
+        data.question_number || 1, data.question_text, opts, data.correct_answer,
+        data.explanation || '', data.difficulty || 'Moderate', data.topic_tag || '',
+        data.years_appeared || ''
+      );
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_questions WHERE id = ?').get(id);
+    },
+    count: async () => {
+      const row: any = this.sqliteDb!.prepare('SELECT COUNT(*) as c FROM pyq_questions').get();
+      return row ? row.c : 0;
+    }
+  };
+
+  pyqTrendStat = {
+    findMany: async (args: any = {}) => {
+      const examId = args.where?.examination_id ?? 1;
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_trend_stats WHERE examination_id = ? ORDER BY appearance_count DESC').all(examId);
+    },
+    create: async (args: { data: any }) => {
+      const { data } = args;
+      const id = data.id || crypto.randomUUID();
+      const sql = `
+        INSERT OR REPLACE INTO pyq_trend_stats (
+          id, examination_id, unit_number, unit_title, historical_weightage,
+          topic_name, appearance_count, trend_category, years_appeared
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      this.sqliteDb!.prepare(sql).run(
+        id, data.examination_id ?? 1, data.unit_number, data.unit_title, data.historical_weightage,
+        data.topic_name, data.appearance_count || 1, data.trend_category || 'Frequently Tested',
+        data.years_appeared || ''
+      );
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_trend_stats WHERE id = ?').get(id);
+    }
   };
 
   researchPaper = {
