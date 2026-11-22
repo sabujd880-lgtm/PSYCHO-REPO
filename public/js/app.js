@@ -242,17 +242,20 @@ const App = {
       case 'predictor':
         PyqExamModule.render(container, 'predict');
         break;
-      case 'teaching':
-        TeachingModule.render(container);
-        break;
       case 'notes-bookmarks':
         NotesBookmarksModule.render(container);
         break;
-      case 'ai-assistant':
-        AiAssistantModule.render(container);
-        break;
       case 'settings':
         SettingsModule.render(container);
+        break;
+      case 'teaching':
+        this.navigate('document-intelligence');
+        break;
+      case 'research':
+        this.navigate('library');
+        break;
+      case 'ai-assistant':
+        this.navigate('document-intelligence');
         break;
       default:
         renderDashboard(container);

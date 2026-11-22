@@ -44,3 +44,4 @@ for (const [k, v] of Object.entries(categories)) {
 
 fs.writeFileSync('books_categorized.json', JSON.stringify(categories, null, 2), 'utf-8');
 console.log('Saved categories to books_categorized.json');
+

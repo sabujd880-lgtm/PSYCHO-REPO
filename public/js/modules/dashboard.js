@@ -12,8 +12,8 @@ async function renderDashboard(container) {
         <button class="btn btn-primary btn-sm" onclick="App.openUploadModal()">
           <i data-lucide="upload-cloud"></i> Upload Document
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="App.navigate('ai-assistant')">
-          <i data-lucide="bot"></i> AI Scholar Assistant
+        <button class="btn btn-secondary btn-sm" onclick="App.navigate('document-intelligence')">
+          <i data-lucide="file-search"></i> Document Intelligence
         </button>
       </div>
     </div>
@@ -70,11 +70,12 @@ async function renderDashboard(container) {
       </div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <button class="btn btn-outline btn-sm" onclick="App.openUploadModal()"><i data-lucide="upload"></i> Upload Document</button>
-        <button class="btn btn-outline btn-sm" onclick="App.navigate('ai-assistant')"><i data-lucide="message-square"></i> Ask a Question</button>
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('global-search-input').focus()"><i data-lucide="search"></i> Search Psychology</button>
-        <button class="btn btn-outline btn-sm" onclick="App.navigate('pyq-exam')"><i data-lucide="trending-up"></i> Analyze PYQ</button>
-        <button class="btn btn-outline btn-sm" onclick="App.navigate('predictor')"><i data-lucide="sparkles"></i> Predict Practice Paper</button>
-        <button class="btn btn-outline btn-sm" onclick="App.navigate('teaching')"><i data-lucide="file-plus"></i> Generate Study Notes</button>
+        <button class="btn btn-outline btn-sm" onclick="App.navigate('document-intelligence')"><i data-lucide="file-search"></i> Document Q&A (RAG)</button>
+        <button class="btn btn-outline btn-sm" onclick="App.navigate('library')"><i data-lucide="book-open"></i> Psychology Library</button>
+        <button class="btn btn-outline btn-sm" onclick="App.navigate('assessment')"><i data-lucide="gauge"></i> Psychological Tests</button>
+        <button class="btn btn-outline btn-sm" onclick="App.navigate('clinical')"><i data-lucide="clipboard-plus"></i> Clinical Protocols</button>
+        <button class="btn btn-outline btn-sm" onclick="App.navigate('pyq-exam')"><i data-lucide="trending-up"></i> UGC NET PYQ Hub</button>
         <button class="btn btn-outline btn-sm" onclick="PyqExamModule.openMockModal()"><i data-lucide="check-circle-2"></i> Create Mock Test</button>
       </div>
     </div>

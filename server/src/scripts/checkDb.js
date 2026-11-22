@@ -10,3 +10,4 @@ for (const t of tables) {
   const count = db.prepare(`SELECT COUNT(*) as c FROM "${t.name}"`).get();
   console.log(`- ${t.name}: ${count.c} records`);
 }
+

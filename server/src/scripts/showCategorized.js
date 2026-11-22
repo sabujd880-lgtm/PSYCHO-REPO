@@ -9,3 +9,4 @@ for (const [k, list] of Object.entries(cats)) {
     console.log(`- ${f.name} (${f.sizeMB} MB)`);
   });
 }
+
