@@ -94,3 +94,4 @@ declare var crypto: {
   randomUUID(): string;
   [key: string]: any;
 };
+

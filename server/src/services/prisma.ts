@@ -39,8 +39,10 @@ class PrismaDatabaseClient implements PrismaClientInterface {
   private dbPath: string;
 
   constructor() {
-    const dataDir = path.resolve(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
+    let dataDir = path.resolve(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir) && fs.existsSync(path.resolve(process.cwd(), '..', 'data'))) {
+      dataDir = path.resolve(process.cwd(), '..', 'data');
+    } else if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
     this.dbPath = path.join(dataDir, 'app_pg_shadow.db');
@@ -1030,6 +1032,15 @@ class PrismaDatabaseClient implements PrismaClientInterface {
     findMany: async () => {
       return this.sqliteDb!.prepare('SELECT * FROM clinical_templates ORDER BY category ASC, title ASC').all();
     },
+    findUnique: async (args: { where: { id: string } }) => {
+      return this.sqliteDb!.prepare('SELECT * FROM clinical_templates WHERE id = ?').get(args.where.id);
+    },
+    findFirst: async (args: any = {}) => {
+      if (args.where?.id) {
+        return this.sqliteDb!.prepare('SELECT * FROM clinical_templates WHERE id = ?').get(args.where.id);
+      }
+      return this.sqliteDb!.prepare('SELECT * FROM clinical_templates LIMIT 1').get();
+    },
     create: async (args: { data: any }) => {
       const { data } = args;
       const id = data.id || crypto.randomUUID();
@@ -1046,6 +1057,15 @@ class PrismaDatabaseClient implements PrismaClientInterface {
     findMany: async (args: any = {}) => {
       const examId = args.where?.examination_id ?? 1;
       return this.sqliteDb!.prepare('SELECT * FROM pyq_syllabus_units WHERE examination_id = ? ORDER BY unit_number ASC').all(examId);
+    },
+    findFirst: async (args: any = {}) => {
+      if (args.where?.unit_number !== undefined) {
+        return this.sqliteDb!.prepare('SELECT * FROM pyq_syllabus_units WHERE unit_number = ? LIMIT 1').get(args.where.unit_number);
+      }
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_syllabus_units LIMIT 1').get();
+    },
+    findUnique: async (args: { where: { id: string } }) => {
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_syllabus_units WHERE id = ?').get(args.where.id);
     },
     create: async (args: { data: any }) => {
       const { data } = args;
@@ -1084,6 +1104,17 @@ class PrismaDatabaseClient implements PrismaClientInterface {
         options_json: typeof r.options_json === 'string' ? JSON.parse(r.options_json || '[]') : (r.options_json || [])
       }));
     },
+    findFirst: async (args: any = {}) => {
+      const { where = {} } = args;
+      if (where.unit_number !== undefined && where.question_number !== undefined) {
+        const row: any = this.sqliteDb!.prepare('SELECT * FROM pyq_questions WHERE unit_number = ? AND question_number = ? LIMIT 1').get(where.unit_number, where.question_number);
+        if (row && typeof row.options_json === 'string') {
+          row.options_json = JSON.parse(row.options_json || '[]');
+        }
+        return row;
+      }
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_questions LIMIT 1').get();
+    },
     create: async (args: { data: any }) => {
       const { data } = args;
       const id = data.id || crypto.randomUUID();
@@ -1112,6 +1143,13 @@ class PrismaDatabaseClient implements PrismaClientInterface {
     findMany: async (args: any = {}) => {
       const examId = args.where?.examination_id ?? 1;
       return this.sqliteDb!.prepare('SELECT * FROM pyq_trend_stats WHERE examination_id = ? ORDER BY appearance_count DESC').all(examId);
+    },
+    findFirst: async (args: any = {}) => {
+      const { where = {} } = args;
+      if (where.unit_number !== undefined && where.topic_name) {
+        return this.sqliteDb!.prepare('SELECT * FROM pyq_trend_stats WHERE unit_number = ? AND topic_name = ? LIMIT 1').get(where.unit_number, where.topic_name);
+      }
+      return this.sqliteDb!.prepare('SELECT * FROM pyq_trend_stats LIMIT 1').get();
     },
     create: async (args: { data: any }) => {
       const { data } = args;

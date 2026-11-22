@@ -14,6 +14,8 @@
   },
   "include": [
     "server/src/**/*",
-    "server/tests/**/*"
+    "server/tests/**/*",
+    "server/prisma/**/*"
   ]
 }
+

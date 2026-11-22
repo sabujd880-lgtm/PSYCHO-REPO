@@ -323,7 +323,13 @@ export class ExpressApp {
 
     if (!route) {
       if (req.method === 'GET' && !req.path.startsWith('/api')) {
-        const publicDir = path.resolve(process.cwd(), 'public');
+        let publicDir = path.resolve(process.cwd(), 'public');
+        if (!fs.existsSync(publicDir) && fs.existsSync(path.resolve(process.cwd(), '..', 'public'))) {
+          publicDir = path.resolve(process.cwd(), '..', 'public');
+        }
+        if (!fs.existsSync(publicDir)) {
+          publicDir = path.resolve(import.meta.dirname, '..', '..', 'public');
+        }
         const safePath = req.path === '/' ? 'index.html' : req.path.replace(/^\//, '');
         const filePath = path.resolve(publicDir, safePath);
         if (filePath.startsWith(publicDir) && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
@@ -343,6 +349,12 @@ export class ExpressApp {
           };
           res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
           const fileStream = fs.createReadStream(filePath);
+          fileStream.pipe(res);
+          return;
+        } else if (!req.path.startsWith('/api') && fs.existsSync(path.join(publicDir, 'index.html')) && !path.extname(req.path)) {
+          // SPA fallback for direct client navigation
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          const fileStream = fs.createReadStream(path.join(publicDir, 'index.html'));
           fileStream.pipe(res);
           return;
         }

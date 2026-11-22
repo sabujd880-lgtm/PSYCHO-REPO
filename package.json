@@ -1,12 +1,19 @@
 {
-  "name": "personal-psychology-knowledge-intelligence-platform",
+  "name": "psychology-intelligence-platform",
   "version": "1.0.0",
-  "description": "Comprehensive, single-user Psychology Knowledge, Clinical Reference, Research, Assessment, Teaching and Examination Preparation Platform.",
-  "main": "server/server.js",
+  "type": "module",
+  "description": "Personal Psychology Knowledge, Clinical Reference, Research, Assessment, and Intelligence Platform.",
+  "main": "server/src/server.ts",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
-    "start": "node server/server.js",
-    "seed": "node server/seedData.js",
-    "test": "node test/verify.js"
+    "build": "echo 'Build complete - Node 22 native TypeScript runtime enabled'",
+    "start": "node --experimental-strip-types server/src/server.ts",
+    "dev": "node --experimental-strip-types server/src/server.ts",
+    "test": "node --experimental-strip-types server/tests/runTests.ts",
+    "test:all": "node --experimental-strip-types server/tests/runTests.ts && node --experimental-strip-types server/tests/phase2.test.ts && node --experimental-strip-types server/tests/phase3.test.ts",
+    "seed": "node --experimental-strip-types server/prisma/seed.ts"
   },
   "keywords": [
     "psychology",
@@ -22,4 +29,3 @@
   "author": "Psychology Scholar",
   "license": "MIT"
 }
-

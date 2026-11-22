@@ -1,0 +1,10 @@
+.git
+.gitignore
+*.bat
+*.ps1
+books_audit.json
+books_categorized.json
+test/
+server/tests/
+node_modules
+server/node_modules
