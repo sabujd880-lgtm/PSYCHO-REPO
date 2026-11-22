@@ -1,0 +1,25 @@
+{
+  "name": "personal-psychology-knowledge-intelligence-platform",
+  "version": "1.0.0",
+  "description": "Comprehensive, single-user Psychology Knowledge, Clinical Reference, Research, Assessment, Teaching and Examination Preparation Platform.",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "seed": "node server/seedData.js",
+    "test": "node test/verify.js"
+  },
+  "keywords": [
+    "psychology",
+    "clinical-psychology",
+    "psychometrics",
+    "dsm-5-tr",
+    "icd-11",
+    "research-methodology",
+    "ugc-net",
+    "rag",
+    "document-intelligence"
+  ],
+  "author": "Psychology Scholar",
+  "license": "MIT"
+}
+

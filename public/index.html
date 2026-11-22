@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Psychology Knowledge & Intelligence Platform</title>
+  <!-- Academic Typography: Times New Roman Serif -->
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- LEFT COLLAPSIBLE SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <div class="logo-icon">Ψ</div>
+          <div class="brand-text">
+            <span class="brand-title">PsycheIntel</span>
+            <span class="brand-subtitle">Knowledge Platform</span>
+          </div>
+        </div>
+        <button id="sidebar-toggle" class="icon-btn" title="Toggle Sidebar">
+          <i data-lucide="panel-left-close"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">CORE PLATFORM</div>
+        <a href="#dashboard" class="nav-item active" data-nav="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#library" class="nav-item" data-nav="library">
+          <i data-lucide="book-open"></i>
+          <span>Psychology Library</span>
+        </a>
+        <a href="#knowledge-base" class="nav-item" data-nav="knowledge-base">
+          <i data-lucide="network"></i>
+          <span>Knowledge Base</span>
+        </a>
+
+        <div class="nav-section-title">CLINICAL & ASSESSMENT</div>
+        <a href="#clinical" class="nav-item" data-nav="clinical">
+          <i data-lucide="clipboard-plus"></i>
+          <span>Clinical Reference</span>
+        </a>
+        <a href="#assessment" class="nav-item" data-nav="assessment">
+          <i data-lucide="gauge"></i>
+          <span>Assessment Centre</span>
+        </a>
+
+        <div class="nav-section-title">RESEARCH & DOCUMENTS</div>
+        <a href="#document-intelligence" class="nav-item" data-nav="document-intelligence">
+          <i data-lucide="file-search"></i>
+          <span>Document Intelligence</span>
+          <span class="nav-badge">RAG</span>
+        </a>
+        <a href="#research" class="nav-item" data-nav="research">
+          <i data-lucide="flask-conical"></i>
+          <span>Research Hub</span>
+        </a>
+
+        <div class="nav-section-title">EXAMS & TEACHING</div>
+        <a href="#pyq-exam" class="nav-item" data-nav="pyq-exam">
+          <i data-lucide="graduation-cap"></i>
+          <span>PYQ & Exam Prep</span>
+        </a>
+        <a href="#predictor" class="nav-item" data-nav="predictor">
+          <i data-lucide="sparkles"></i>
+          <span>Paper Predictor</span>
+        </a>
+        <a href="#teaching" class="nav-item" data-nav="teaching">
+          <i data-lucide="presentation"></i>
+          <span>Teaching Workspace</span>
+        </a>
+
+        <div class="nav-section-title">WORKSPACE</div>
+        <a href="#notes-bookmarks" class="nav-item" data-nav="notes-bookmarks">
+          <i data-lucide="bookmark"></i>
+          <span>Notes & Bookmarks</span>
+        </a>
+        <a href="#ai-assistant" class="nav-item" data-nav="ai-assistant">
+          <i data-lucide="bot"></i>
+          <span>AI Psychology Assistant</span>
+        </a>
+        <a href="#settings" class="nav-item" data-nav="settings">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar">PS</div>
+          <div class="user-details">
+            <span class="user-title" id="user-display-name">Psychology Scholar</span>
+            <span class="user-mode">Single-User Academic</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="main-wrapper">
+      
+      <!-- TOP NAVIGATION BAR -->
+      <header class="top-navbar">
+        <button id="mobile-menu-toggle" class="icon-btn mobile-only">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <!-- GLOBAL PSYCHOLOGY SEARCH BAR -->
+        <div class="global-search-container">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="global-search-input" placeholder="Search psychology topics, books, assessments, clinical resources, PYQs..." autocomplete="off">
+          <div id="search-dropdown" class="search-dropdown hidden"></div>
+        </div>
+
+        <div class="top-actions">
+          <button id="btn-quick-upload" class="btn btn-primary btn-sm">
+            <i data-lucide="upload-cloud"></i>
+            <span>Upload Document</span>
+          </button>
+          
+          <button id="btn-quick-ai" class="btn btn-secondary btn-sm" title="Open AI Psychology Assistant">
+            <i data-lucide="bot"></i>
+            <span>Ask AI</span>
+          </button>
+
+          <button id="btn-theme-toggle" class="icon-btn" title="Toggle Theme">
+            <i data-lucide="moon"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- VIEW CONTAINER -->
+      <main id="main-content" class="content-container">
+        <!-- Dynamically injected views -->
+      </main>
+    </div>
+
+    <!-- QUICK UPLOAD MODAL -->
+    <div id="upload-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i data-lucide="file-up"></i>
+            <span>Upload Document to Document Intelligence</span>
+          </div>
+          <button id="btn-close-upload-modal" class="icon-btn"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div id="drop-zone" class="drop-zone">
+            <i data-lucide="cloud-upload" class="drop-icon"></i>
+            <p class="drop-text">Drag and drop file here, or <span class="browse-link">browse</span></p>
+            <span class="drop-subtext">Supports PDF, DOCX, TXT, CSV, PPTX, Scanned Notes (with OCR)</span>
+            <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt,.csv,.pptx,.png,.jpg,.jpeg">
+          </div>
+          <div id="upload-status" class="upload-status hidden">
+            <div class="spinner"></div>
+            <p id="upload-status-text">Processing text, preserving pages, generating concepts & study notes...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="toast-container"></div>
+
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/modules/dashboard.js"></script>
+  <script src="/js/modules/library.js"></script>
+  <script src="/js/modules/knowledgeBase.js"></script>
+  <script src="/js/modules/clinical.js"></script>
+  <script src="/js/modules/assessment.js"></script>
+  <script src="/js/modules/documentIntelligence.js"></script>
+  <script src="/js/modules/research.js"></script>
+  <script src="/js/modules/pyqExam.js"></script>
+  <script src="/js/modules/teaching.js"></script>
+  <script src="/js/modules/notesBookmarks.js"></script>
+  <script src="/js/modules/aiAssistant.js"></script>
+  <script src="/js/modules/settings.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
+

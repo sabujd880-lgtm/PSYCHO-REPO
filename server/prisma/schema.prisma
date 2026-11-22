@@ -1,0 +1,563 @@
+// server/prisma/schema.prisma
+// Prisma Schema for Personal Psychology Knowledge & Intelligence Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. RESOURCE CATEGORIES
+// ==========================================
+model ResourceCategory {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  articles    KnowledgeArticle[]
+  assessments AssessmentInstrument[]
+  references  Reference[]
+
+  @@index([code])
+}
+
+// ==========================================
+// 2. KNOWLEDGE BASE ARTICLES
+// ==========================================
+model KnowledgeArticle {
+  id                  String            @id @default(uuid())
+  title               String
+  slug                String            @unique
+  definition          String
+  explanation         String
+  keyConcepts         String[]
+  theories            String?
+  applications        String?
+  limitations         String?
+  authorReferences    String?
+  sourceReferences    String?
+  doi                 String?
+  publicationInfo     String?
+  introduction        String?
+  historicalBackground String?
+  keyTheorists        String[]
+  majorTheories       String?
+  coreConcepts        String?
+  principles          String?
+  classification      String?
+  models              String?
+  clinicalRelevance   String?
+  researchEvidence    String?
+  examples            String?
+  referencesCitations String?
+  recommendedReading  String?
+  verifiedStatus      String            @default("Verified Scholarly")
+  categoryId          String?
+  category            ResourceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  references          Reference[]
+  bookmarks           Bookmark[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([createdAt])
+}
+
+// ==========================================
+// 2B. TOPIC RELATIONSHIP GRAPH
+// ==========================================
+model TopicRelation {
+  id           String   @id @default(uuid())
+  sourceTopic  String
+  targetTopic  String
+  relationType String   @default("related_to")
+  description  String?
+  createdAt    DateTime @default(now())
+
+  @@index([sourceTopic])
+  @@index([targetTopic])
+}
+
+// ==========================================
+// 3. AUTHORS
+// ==========================================
+model Author {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  affiliation String?
+  orcid       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  references  ReferenceAuthor[]
+}
+
+// ==========================================
+// 4. REFERENCES & CITATIONS
+// ==========================================
+model Reference {
+  id              String            @id @default(uuid())
+  title           String
+  authorNames     String?
+  year            Int?
+  publisher       String?
+  journal         String?
+  volume          String?
+  issue           String?
+  pages           String?
+  doi             String?
+  url             String?
+  abstract        String?
+  publicationType String            @default("Journal Article")
+  subject         String?
+  copyrightStatus String?
+  citationApa     String?
+  citationBibtex  String?
+  isVerified      Boolean           @default(true)
+  categoryId      String?
+  category        ResourceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  articleId       String?
+  article         KnowledgeArticle? @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  authors         ReferenceAuthor[]
+
+  @@index([doi])
+  @@index([year])
+  @@index([categoryId])
+}
+
+model ReferenceAuthor {
+  referenceId String
+  authorId    String
+  order       Int       @default(1)
+  reference   Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  author      Author    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([referenceId, authorId])
+}
+
+// ==========================================
+// 5. DOCUMENT INTELLIGENCE
+// ==========================================
+model Document {
+  id                  String          @id @default(uuid())
+  originalFilename    String
+  storageKey          String          @unique
+  mimeType            String
+  fileSize            Int
+  fileType            String          // PDF, DOCX, DOC, PPTX, XLSX, CSV, IMAGE, TXT
+  pageCount           Int             @default(1)
+  processingStatus    String          @default("UPLOADED") // UPLOADED, QUEUED, PROCESSING, COMPLETED, FAILED
+  extractionMethod    String          @default("NATIVE")   // PDF_STREAM, DOCX_XML, PPTX_SLIDES, XLSX_SHEETS, CSV_TEXT, OCR_IMAGE, TEXT_NATIVE
+  processingError     String?
+  summary             String?
+  keyConcepts         String[]
+  extractedReferences String[]
+  studyNotes          String?
+  ocrApplied          Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  pages               DocumentPage[]
+  chunks              DocumentChunk[]
+  pyqPapers           PYQPaper[]
+  conversations       Conversation[]
+
+  @@index([storageKey])
+  @@index([processingStatus])
+  @@index([fileType])
+  @@index([createdAt])
+}
+
+model DocumentPage {
+  id               String   @id @default(uuid())
+  documentId       String
+  document         Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  pageNumber       Int
+  heading          String?
+  extractedText    String
+  extractionMethod String   @default("NATIVE")
+  ocrConfidence    Float?
+  createdAt        DateTime @default(now())
+
+  @@unique([documentId, pageNumber])
+  @@index([documentId, pageNumber])
+}
+
+model DocumentChunk {
+  id             String   @id @default(uuid())
+  documentId     String
+  document       Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  pageReferences Int[]
+  chunkText      String
+  sectionHeading String?
+  chunkIndex     Int
+  tokenCount     Int      @default(0)
+  embedding      Json?
+  createdAt      DateTime @default(now())
+
+  @@index([documentId, chunkIndex])
+}
+
+// ==========================================
+// 6. ASSESSMENT INSTRUMENTS
+// ==========================================
+model AssessmentInstrument {
+  id                   String            @id @default(uuid())
+  code                 String            @unique
+  name                 String
+  acronym              String?
+  categoryId           String?
+  category             ResourceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  originalAuthor       String
+  publicationYear      Int?
+  purpose              String
+  targetPopulation     String?
+  ageRange             String?
+  administrationMethod String?
+  timeRequired         String?
+  domainsMeasured      String
+  reliabilityEvidence  String
+  validityEvidence     String?
+  normativePopulation  String?
+  scoringOverview      String
+  interpretationGuide  String
+  qualificationLevel   String?           @default("Level C")
+  sourceReferences     String
+  isProprietary        Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([code])
+  @@index([categoryId])
+}
+
+// ==========================================
+// 7. CLINICAL TOPICS
+// ==========================================
+model ClinicalTopic {
+  id                     String   @id @default(uuid())
+  domain                 String
+  title                  String
+  explanation            String
+  clinicalSignificance   String
+  professionalGuidelines String
+  practicalExamples      String?
+  structuredTemplates    String?
+  relatedTools           String?
+  references             String[]
+  safetyDisclaimer       String   @default("Educational & Academic Reference Only. Does not substitute professional clinical judgment.")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([domain])
+}
+
+// ==========================================
+// 8. RESEARCH PAPERS
+// ==========================================
+model ResearchPaper {
+  id          String   @id @default(uuid())
+  title       String
+  authors     String[]
+  year        Int?
+  journal     String?
+  doi         String?  @unique
+  abstract    String?
+  methodology String?
+  sampleSize  Int?
+  findings    String?
+  citationApa String?
+  source      String   @default("Verified Scholarly")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([doi])
+  @@index([year])
+}
+
+// ==========================================
+// 9. EXAMINATIONS & SYLLABUS
+// ==========================================
+model Exam {
+  id               String         @id @default(uuid())
+  name             String         @unique
+  board            String?
+  description      String?
+  syllabusOverview String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  syllabi          ExamSyllabus[]
+  pyqPapers        PYQPaper[]
+  questions        ExamQuestion[]
+  topicFrequencies TopicFrequency[]
+  mockTests        MockTest[]
+}
+
+model ExamSyllabus {
+  id               String          @id @default(uuid())
+  examId           String
+  exam             Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
+  unitNumber       Int
+  unitTitle        String
+  topicsCovered    String
+  weightagePercent Float           @default(10.0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  questions        ExamQuestion[]
+  topicFrequencies TopicFrequency[]
+
+  @@unique([examId, unitNumber])
+  @@index([examId, unitNumber])
+}
+
+// ==========================================
+// 10. PYQ PAPERS & QUESTIONS
+// ==========================================
+model PYQPaper {
+  id               String         @id @default(uuid())
+  examId           String
+  exam             Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
+  year             Int
+  session          String?
+  title            String
+  totalQuestions   Int            @default(0)
+  sourceDocumentId String?
+  sourceDocument   Document?      @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  questions        ExamQuestion[]
+
+  @@index([examId, year])
+}
+
+model ExamQuestion {
+  id                String             @id @default(uuid())
+  paperId           String?
+  paper             PYQPaper?          @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  examId            String
+  exam              Exam               @relation(fields: [examId], references: [id], onDelete: Cascade)
+  unitId            String?
+  unit              ExamSyllabus?      @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  questionNumber    Int?
+  questionText      String
+  questionType      String             @default("MCQ")
+  options           Json?
+  correctAnswer     String?
+  explanation       String?
+  topicTag          String?
+  theoristTag       String?
+  difficulty        String             @default("Moderate")
+  sourcePage        Int?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  mockTestQuestions MockTestQuestion[]
+
+  @@index([examId, unitId])
+  @@index([topicTag])
+}
+
+model QuestionTopic {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model TopicFrequency {
+  id                 String       @id @default(uuid())
+  examId             String
+  exam               Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  unitId             String
+  unit               ExamSyllabus @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  topicName          String
+  appearanceCount    Int          @default(1)
+  yearsAppeared      Int[]
+  trendCategory      String       @default("Frequently Tested")
+  lastAppearedYear   Int?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([examId, topicName])
+  @@index([examId, topicName])
+}
+
+model PredictedQuestion {
+  id                  String   @id @default(uuid())
+  examName            String
+  questionText        String
+  options             Json?
+  correctAnswer       String?
+  explanation         String?
+  unitTitle           String
+  topicTag            String?
+  difficulty          String   @default("Moderate")
+  predictionScore     Float    @default(50.0)
+  predictionCategory  String   @default("Moderate historical relevance")
+  predictionRationale String
+  relatedYears        Int[]
+  createdAt           DateTime @default(now())
+
+  @@index([examName, predictionCategory])
+}
+
+// ==========================================
+// 11. MOCK TESTS & ATTEMPTS
+// ==========================================
+model MockTest {
+  id               String             @id @default(uuid())
+  title            String
+  examId           String?
+  exam             Exam?              @relation(fields: [examId], references: [id], onDelete: SetNull)
+  mode             String             @default("practice")
+  totalQuestions   Int
+  timeLimitMinutes Int                @default(60)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  questions        MockTestQuestion[]
+  attempts         MockTestAttempt[]
+
+  @@index([examId])
+}
+
+model MockTestQuestion {
+  id         String       @id @default(uuid())
+  mockTestId String
+  mockTest   MockTest     @relation(fields: [mockTestId], references: [id], onDelete: Cascade)
+  questionId String
+  question   ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  order      Int          @default(1)
+
+  @@unique([mockTestId, questionId])
+}
+
+model MockTestAttempt {
+  id                 String   @id @default(uuid())
+  mockTestId         String
+  mockTest           MockTest @relation(fields: [mockTestId], references: [id], onDelete: Cascade)
+  score              Float
+  accuracyPercent    Float
+  totalAttempted     Int
+  correctCount       Int
+  incorrectCount     Int
+  answersPayload     Json?
+  unitPerformance    Json?
+  weakTopics         String[]
+  timeTakenSeconds   Int
+  completedAt        DateTime @default(now())
+
+  @@index([mockTestId, completedAt])
+}
+
+// ==========================================
+// 12. TEACHING WORKSPACE
+// ==========================================
+model TeachingNote {
+  id          String   @id @default(uuid())
+  title       String
+  topic       String
+  content     String
+  tags        String[]
+  level       String   @default("Undergraduate")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([topic])
+}
+
+model LessonPlan {
+  id                 String   @id @default(uuid())
+  topicTitle         String
+  targetLevel        String   @default("Undergraduate")
+  durationMinutes    Int      @default(60)
+  learningObjectives String
+  introduction       String
+  explanation        String
+  keyConcepts        String
+  examples           String
+  classroomActivity  String
+  assessmentQuestions String
+  references         String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([topicTitle])
+}
+
+// ==========================================
+// 13. BOOKMARKS
+// ==========================================
+model Bookmark {
+  id        String            @id @default(uuid())
+  itemType  String
+  itemId    String
+  notes     String?
+  articleId String?
+  article   KnowledgeArticle? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  createdAt DateTime          @default(now())
+
+  @@index([itemType, itemId])
+}
+
+// ==========================================
+// 14. AI CONVERSATIONS & MESSAGES
+// ==========================================
+model Conversation {
+  id         String    @id @default(uuid())
+  mode       String    @default("Knowledge")
+  title      String    @default("New Discussion")
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  messages   Message[]
+
+  @@index([mode])
+  @@index([documentId])
+}
+
+model Message {
+  id                 String       @id @default(uuid())
+  conversationId     String
+  conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role               String
+  content            String
+  citations          Json?
+  confidenceCategory String?
+  createdAt          DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ==========================================
+// 15. APPLICATION SETTINGS
+// ==========================================
+model ApplicationSetting {
+  id                      String   @id @default(uuid())
+  preferredCitationStyle  String   @default("APA 7th")
+  preferredAiProvider     String   @default("none")
+  defaultExamConfig       Json?
+  documentStorageConfig   Json?
+  applicationPreferences  Json?
+  updatedAt               DateTime @updatedAt
+  createdAt               DateTime @default(now())
+}
+
